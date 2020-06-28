@@ -24,7 +24,6 @@ app.use(requestLogger);
 
 app.get("/api/articles", (request, response) => {
   Article.find({}).then((articles) => {
-    console.log(articles);
     response.json(articles);
   });
 });
