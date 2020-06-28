@@ -1,9 +1,15 @@
+require("dotenv").config();
 const express = require("express");
 const app = express();
-const cors = require('cors')
+const cors = require("cors");
+const mongoose = require("mongoose");
 
-app.use(cors())
+const Article = require("./models/article");
+const Company = require("./models/companies");
+const Tag = require("./models/tags");
+const User = require("./models/users");
 
+app.use(cors());
 const requestLogger = (request, response, next) => {
   console.log("Method:", request.method);
   console.log("Path:  ", request.path);
@@ -11,57 +17,60 @@ const requestLogger = (request, response, next) => {
   console.log("---");
   next();
 };
+
+app.use(express.static("build"));
+app.use(express.json());
 app.use(requestLogger);
 
-
-let articles = [
-  { title: "Harry Potter and the Philosopher's Stone", id: "this_english" },
-  { title: "Harry Potter en die Towenaar se Steen", id: "is_Afrikaans" },
-  { title: "هاري بوتر وحجرالفيلسوف", id: "arabiaan" },
-  { title: "哈利·波特与魔法石", id: "in_chinese" },
-  { title: "Hari Poter kaj la Ŝtono de la Saĝulo", id: "where_is_esperanto" },
-  { title: "ハリー・ポッターと賢者の石", id: "we_allknow_this" },
-  { title: "Harry Potter a Kámen mudrců", id: "czechbeer_good" },
-  { title: "Harry Potter en de Steen der Wijzen", id: "Haineken_" },
-  { title: "Harry Potter und der Stein der Weisen", id: "german_" },
-  { title: "Harry Potter At Ang Pilospong Bato", id: "tagalog_" },
-  { title: "Ἄρειος Ποτὴρ καὶ ἡ τοῦ φιλοσόφου λίθος", id: "ancient_greek" },
-  { title: "Harry Potter ujarallu inuunartoq", id: "green_landic" },
-  { title: "Harry Potter és a bölcsek köve", id: "hungarian" },
-  { title: " Harry Potter dan Batu Bertuah", id: "indonesian_migoren" },
-  { title: "Harry Potter agus an Órchloch", id: "whiskey_irish" },
-  { title: "Harry Potter e la Pietra Filosofale", id: "italia_n" },
-  { title: "해리 포터와 마법사의 돌 ", id: "is_korean" },
-  { title: "Harrius Potter et Philosophi Lapis", id: "latin_defficult" },
-  { title: "Harry Potter dengan Batu yang Berhikmat", id: "malay_sian" },
-  { title: "Харри Поттер ба Шидэт Чулуу", id: "mongolian" },
-  { title: "هری پاتر-سنگ جاد", id: "persian_hard" },
-  { title: "Harry Potter i Kamień Filozoficzny", id: "polish" },
-  { title: "Гарри Поттер и философский камень", id: "russian_bolciti" },
-  { title: "Harry Potter agus Clach an Fheallsanaich", id: "scottish_gaelic" },
-  { title: "Hari Poter i kamen mudrosti", id: "serbian_latin" },
-  { title: "Harry Potter a kameň mudrcov", id: "slovak" },
-  { title: " แฮร์รี่ พอตเตอร์ กับศิลาอาถรรพ์", id: "thai_land" },
-  { title: "Harry Potter ve Felsefe Taşı", id: "melhaba_turkish" },
-  { title: "Гаррі Поттер та філософський камінь", id: "u_krainian" },
-];
-
-app.get("/", (req, res) => {
-  res.send("<h1>Hello World!</h1>");
+app.get("/api/articles", (request, response) => {
+  Article.find({}).then((articles) => {
+    console.log(articles);
+    response.json(articles);
+  });
 });
 
-app.get("/api/notes", (request, response) => {
-  response.json(articles);
+app.get("/api/companies", (request, response) => {
+  Company.find({}).then((company) => {
+    response.json(company);
+  });
 });
 
-const PORT = process.env.PORT || 3001
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`)
-})
+app.get("/api/tags", (request, response) => {
+  Tag.find({}).then((tag) => {
+    console.log(tag);
+    response.json(tag);
+  });
+});
 
+app.get("/api/users", (request, response) => {
+  User.find({}).then((user) => {
+    response.json(user);
+  });
+});
 
+// EROOR HANDLER
+// with unknown endpoint
 const unknownEndpoint = (request, response) => {
-    response.status(404).send({ error: "unknown endpoint" });
-  };
-  
-  app.use(unknownEndpoint);
+  response.status(404).send({ error: "unknown endpoint" });
+};
+
+app.use(unknownEndpoint);
+
+const errorHandler = (error, request, response, next) => {
+  console.error(error.message);
+
+  if (error.name === "CastError") {
+    return response.status(400).send({ error: "malformatted id" });
+  }else if (error.name === 'ValidationError') {
+    return response.status(400).json({ error: error.message })
+  }
+
+  next(error);
+};
+
+app.use(errorHandler);
+
+const PORT = process.env.PORT;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
